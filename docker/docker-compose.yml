@@ -15,7 +15,7 @@ services:
     ports:
       - "5433:5432" # Changed to 5433 to avoid conflict with gestion-rb
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - soluciones_postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soluciones_user} -d ${POSTGRES_DB:-soluciones_tms}" ]
@@ -92,7 +92,7 @@ services:
     command: sh -c "npm install && npm run dev"
 
 volumes:
-  postgres_data:
+  soluciones_postgres_data:
   redis_data:
   frontend_node_modules:
   frontend_next:
