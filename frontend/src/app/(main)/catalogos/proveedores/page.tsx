@@ -1,8 +1,7 @@
-"use client"
-
-import { useState } from "react"
-import { Search, Plus, Building2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Plus, Building2, Trash2, Edit } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link"
 
 interface Supplier {
     id: number
@@ -13,17 +12,8 @@ interface Supplier {
     telefono: string
     email: string
     estatus: "ACTIVO" | "INACTIVO"
-    cxp_pendiente: number
+    cxp_pendiente?: number
 }
-
-const MOCK_SUPPLIERS: Supplier[] = [
-    { id: 1, nombre: "Pemex Transformación Industrial", rfc: "PMI770901VT0", tipo: "COMBUSTIBLE", contacto_nombre: "Ing. Luis Herrera", telefono: "55-1111-2222", email: "lherrera@pemex.com", estatus: "ACTIVO", cxp_pendiente: 38400 },
-    { id: 2, nombre: "Llantera del Norte, S.A.", rfc: "LNO890615GQ0", tipo: "REFACCIONES", contacto_nombre: "Sr. Marcos Rodríguez", telefono: "81-3333-4444", email: "mrodriguez@llanteranorte.com", estatus: "ACTIVO", cxp_pendiente: 52000 },
-    { id: 3, nombre: "AutoZone Industrial, S.A. de C.V.", rfc: "AIN960420MZ0", tipo: "REFACCIONES", contacto_nombre: "Ing. Ana Martínez", telefono: "81-5555-6666", email: "amartinez@autozone.com.mx", estatus: "ACTIVO", cxp_pendiente: 0 },
-    { id: 4, nombre: "Casetas CAPUFE", rfc: "CAP820101GQ0", tipo: "CASETAS", contacto_nombre: "Lic. Pedro Flores", telefono: "55-7777-8888", email: "pflores@capufe.gob.mx", estatus: "ACTIVO", cxp_pendiente: 0 },
-    { id: 5, nombre: "Taller Hermanos García", rfc: "HGA991201AI0", tipo: "SERVICIOS", contacto_nombre: "C. Roberto García", telefono: "81-9999-0000", email: "contacto@tallergarcia.com", estatus: "ACTIVO", cxp_pendiente: 18500 },
-    { id: 6, nombre: "Diesel Express del Norte", rfc: "DEN010315MZ0", tipo: "COMBUSTIBLE", contacto_nombre: "Ing. Claudia Soto", telefono: "81-1212-3434", email: "csoto@dieselexpress.mx", estatus: "ACTIVO", cxp_pendiente: 0 },
-]
 
 const tipoColor: Record<string, string> = {
     COMBUSTIBLE: "bg-orange-500/15 text-orange-400 border-orange-500/30",
@@ -36,11 +26,47 @@ const tipoColor: Record<string, string> = {
 const MXN = (v: number) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(v)
 
 export default function ProveedoresPage() {
+    const [suppliers, setSuppliers] = useState<Supplier[]>([])
+    const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
-    const filtered = MOCK_SUPPLIERS.filter(s =>
-        !search || [s.nombre, s.rfc, s.tipo, s.contacto_nombre].some(f => f.toLowerCase().includes(search.toLowerCase()))
+
+    useEffect(() => {
+        const fetchSuppliers = async () => {
+            try {
+                const res = await fetch("http://localhost:8001/api/v1/suppliers", {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+                })
+                const data = await res.json()
+                if (data.items) setSuppliers(data.items)
+            } catch (err) {
+                console.error(err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchSuppliers()
+    }, [])
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("¿Estás seguro de eliminar este proveedor?")) return
+        try {
+            const res = await fetch(`http://localhost:8001/api/v1/suppliers/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            })
+            if (res.ok) {
+                setSuppliers(suppliers.filter(s => s.id !== id))
+            }
+        } catch (err) {
+            console.error(err)
+        }
+    }
+
+    const filtered = suppliers.filter(s =>
+        !search || [s.nombre, s.rfc, s.tipo, s.contacto_nombre].some(f => f?.toLowerCase().includes(search.toLowerCase()))
     )
-    const totalCxP = MOCK_SUPPLIERS.filter(s => s.cxp_pendiente > 0).reduce((a, s) => a + s.cxp_pendiente, 0)
+
+    const totalCxP = suppliers.reduce((a, s) => a + (s.cxp_pendiente || 0), 0)
 
     return (
         <div className="space-y-6">
@@ -49,15 +75,15 @@ export default function ProveedoresPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Catálogos</p>
                     <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Proveedores</h1>
                 </div>
-                <button className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
+                <Link href="/catalogos/proveedores/nuevo" className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
                     <Plus className="h-4 w-4" />
                     Nuevo proveedor
-                </button>
+                </Link>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                 <Card><CardContent className="pt-4 pb-4 px-4">
-                    <div className="text-xl font-bold">{MOCK_SUPPLIERS.filter(s => s.estatus === "ACTIVO").length}</div>
+                    <div className="text-xl font-bold">{suppliers.filter(s => s.estatus === "ACTIVO").length}</div>
                     <div className="text-xs text-muted-foreground mt-1">Proveedores activos</div>
                 </CardContent></Card>
                 <Card><CardContent className="pt-4 pb-4 px-4">
@@ -65,7 +91,7 @@ export default function ProveedoresPage() {
                     <div className="text-xs text-muted-foreground mt-1">CxP pendiente</div>
                 </CardContent></Card>
                 <Card><CardContent className="pt-4 pb-4 px-4">
-                    <div className="text-xl font-bold">{MOCK_SUPPLIERS.length}</div>
+                    <div className="text-xl font-bold">{suppliers.length}</div>
                     <div className="text-xs text-muted-foreground mt-1">Total registrados</div>
                 </CardContent></Card>
             </div>
@@ -81,14 +107,18 @@ export default function ProveedoresPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-border">
-                                {["Proveedor", "RFC", "Tipo", "Contacto", "CxP Pendiente", "Estatus"].map(h => (
+                                {["Proveedor", "RFC", "Tipo", "Contacto", "CxP Pendiente", "Estatus", "Acciones"].map(h => (
                                     <th key={h} className="text-left text-xs font-medium text-muted-foreground px-4 py-3 first:pl-5 last:pr-5 whitespace-nowrap">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {filtered.map(s => (
-                                <tr key={s.id} className="hover:bg-muted/30 transition-colors cursor-pointer">
+                            {loading ? (
+                                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">Cargando proveedores...</td></tr>
+                            ) : filtered.length === 0 ? (
+                                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">No hay proveedores registrados</td></tr>
+                            ) : filtered.map(s => (
+                                <tr key={s.id} className="hover:bg-muted/30 transition-colors group">
                                     <td className="px-5 py-3.5">
                                         <div className="flex items-center gap-2.5">
                                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
@@ -102,14 +132,24 @@ export default function ProveedoresPage() {
                                     </td>
                                     <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">{s.rfc}</td>
                                     <td className="px-4 py-3.5">
-                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${tipoColor[s.tipo]}`}>{s.tipo.charAt(0) + s.tipo.slice(1).toLowerCase()}</span>
+                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${tipoColor[s.tipo] || tipoColor.OTRO}`}>{s.tipo}</span>
                                     </td>
                                     <td className="px-4 py-3.5 text-xs text-muted-foreground">{s.contacto_nombre}</td>
                                     <td className="px-4 py-3.5 text-xs font-medium tabular-nums">
-                                        {s.cxp_pendiente > 0 ? <span className="text-yellow-400">{MXN(s.cxp_pendiente)}</span> : <span className="text-muted-foreground">—</span>}
+                                        {(s.cxp_pendiente || 0) > 0 ? <span className="text-yellow-400">{MXN(s.cxp_pendiente || 0)}</span> : <span className="text-muted-foreground">—</span>}
+                                    </td>
+                                    <td className="px-4 py-3.5 text-xs">
+                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${s.estatus === "ACTIVO" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground border-border"}`}>{s.estatus}</span>
                                     </td>
                                     <td className="px-4 pr-5 py-3.5">
-                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${s.estatus === "ACTIVO" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground border-border"}`}>{s.estatus.charAt(0) + s.estatus.slice(1).toLowerCase()}</span>
+                                        <div className="flex items-center gap-2">
+                                            <button className="p-1 hover:bg-muted rounded transition-colors text-muted-foreground hover:text-foreground">
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button onClick={() => handleDelete(s.id)} className="p-1 hover:bg-destructive/10 rounded transition-colors text-muted-foreground hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
