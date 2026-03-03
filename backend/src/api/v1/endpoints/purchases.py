@@ -12,13 +12,14 @@ from src.api.v1.endpoints.auth import get_current_user
 from src.models.user import User
 from src.models.purchases import PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus
 from src.api.v1.schemas.purchases import (
-    PurchaseOrderCreate, PurchaseOrderUpdate, PurchaseOrderResponse, PurchaseOrderWithDetailsResponse
+    PurchaseOrderCreate, PurchaseOrderUpdate, PurchaseOrderResponse, 
+    PurchaseOrderWithDetailsResponse, PurchaseOrderSimpleCreate
 )
 from src.api.v1.schemas.pagination import PaginatedResponse
 
 router = APIRouter()
 
-@router.get("/orders", response_model=PaginatedResponse[PurchaseOrderResponse], tags=["Compras - Órdenes"])
+@router.get("/", response_model=PaginatedResponse[PurchaseOrderResponse], tags=["Compras - Órdenes"])
 async def list_purchase_orders(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
@@ -51,7 +52,7 @@ async def list_purchase_orders(
         page_size=limit
     )
 
-@router.get("/orders/{order_id}", response_model=PurchaseOrderWithDetailsResponse, tags=["Compras - Órdenes"])
+@router.get("/{order_id}", response_model=PurchaseOrderWithDetailsResponse, tags=["Compras - Órdenes"])
 async def get_purchase_order(order_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(
         select(PurchaseOrder)
@@ -61,4 +62,26 @@ async def get_purchase_order(order_id: int, db: AsyncSession = Depends(get_db), 
     po = result.scalar_one_or_none()
     if not po:
         raise HTTPException(status_code=404, detail="Orden de compra no encontrada")
+    return po
+@router.post("/", response_model=PurchaseOrderResponse, tags=["Compras - Órdenes"])
+async def create_purchase_order(
+    obj_in: PurchaseOrderSimpleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Simplified PO creation for the new form
+    po = PurchaseOrder(
+        numero=obj_in.numero_orden,
+        proveedor_id=obj_in.proveedor_id,
+        fecha_orden=obj_in.fecha_orden,
+        fecha_entrega_esperada=obj_in.fecha_entrega,
+        total=obj_in.total,
+        subtotal=obj_in.total / Decimal("1.16"), # Dummy calc for now
+        iva=obj_in.total - (obj_in.total / Decimal("1.16")),
+        estatus=obj_in.estatus,
+        # Requisition is optional now
+    )
+    db.add(po)
+    await db.commit()
+    await db.refresh(po)
     return po

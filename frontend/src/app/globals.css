@@ -161,3 +161,14 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/40;
 }
+
+/* Field Highlight Pattern */
+@keyframes fieldBreath {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 12px 3px rgba(16, 185, 129, 0.4); }
+}
+
+.field-saved {
+  animation: fieldBreath 1.2s ease-in-out 2 !important;
+  border-color: #10b981 !important; /* emerald-500 */
+}

@@ -1,8 +1,10 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Search, Plus, Package, TrendingDown, AlertTriangle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Plus, TrendingDown, AlertTriangle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Sheet, SheetTrigger } from "@/components/ui/sheet"
+import { InventoryItemForm } from "./inventory-item-form"
 
 interface InventoryItem {
     id: number
@@ -24,9 +26,6 @@ const MOCK_INVENTORY: InventoryItem[] = [
     { id: 5, codigo: "LLA-002", nombre: "Llanta de repuesto 315/80R22.5", categoria: "LLANTAS", stock_actual: 3, stock_minimo: 2, unidad_medida: "pza", precio_promedio: 7200, ubicacion: "Bodega principal" },
     { id: 6, codigo: "REF-003", nombre: "Pastillas de freno traseras", categoria: "REFACCIONES", stock_actual: 6, stock_minimo: 4, unidad_medida: "jgo", precio_promedio: 1800, ubicacion: "Estante A3" },
     { id: 7, codigo: "LUB-002", nombre: "Líquido de frenos DOT4 (1L)", categoria: "LUBRICANTES", stock_actual: 15, stock_minimo: 8, unidad_medida: "pza", precio_promedio: 165, ubicacion: "Estante B1" },
-    { id: 8, codigo: "HER-001", nombre: "Gato hidráulico 20T", categoria: "HERRAMIENTAS", stock_actual: 2, stock_minimo: 1, unidad_medida: "pza", precio_promedio: 4500, ubicacion: "Herramientas" },
-    { id: 9, codigo: "REF-004", nombre: "Banda de distribución Freightliner", categoria: "REFACCIONES", stock_actual: 1, stock_minimo: 3, unidad_medida: "pza", precio_promedio: 2800, ubicacion: "Estante A4" },
-    { id: 10, codigo: "LUB-003", nombre: "Grasa de chasis (Bote 400g)", categoria: "LUBRICANTES", stock_actual: 20, stock_minimo: 10, unidad_medida: "pza", precio_promedio: 98, ubicacion: "Estante B3" },
 ]
 
 const categoriaColor: Record<string, string> = {
@@ -35,20 +34,50 @@ const categoriaColor: Record<string, string> = {
     LUBRICANTES: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     HERRAMIENTAS: "bg-violet-500/15 text-violet-400 border-violet-500/30",
     COMBUSTIBLE: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+    refacciones: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    llantas: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+    lubricantes: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    herramientas: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+    combustible: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
 }
 
 const MXN = (v: number) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(v)
 
 export default function InventarioPage() {
+    const [items, setItems] = useState<InventoryItem[]>(MOCK_INVENTORY)
+    const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
     const [filterLow, setFilterLow] = useState(false)
 
-    const itemsLow = MOCK_INVENTORY.filter(i => i.stock_actual < i.stock_minimo)
-    const valorTotal = MOCK_INVENTORY.reduce((a, i) => a + i.stock_actual * i.precio_promedio, 0)
+    const fetchInventory = async () => {
+        try {
+            const res = await fetch("http://localhost:8001/api/v1/inventory", {
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            })
+            const data = await res.json()
+            if (Array.isArray(data?.items) && data.items.length > 0) {
+                setItems(data.items)
+            } else {
+                setItems(MOCK_INVENTORY)
+            }
+        } catch (err) {
+            console.error(err)
+            setItems(MOCK_INVENTORY)
+        } finally {
+            setLoading(false)
+        }
+    }
 
-    const filtered = MOCK_INVENTORY.filter(i => {
-        const matchSearch = !search || [i.codigo, i.nombre, i.categoria, i.ubicacion].some(f => f.toLowerCase().includes(search.toLowerCase()))
-        const matchLow = !filterLow || i.stock_actual < i.stock_minimo
+    useEffect(() => {
+        fetchInventory()
+    }, [])
+
+    const itemsLow = items.filter(i => (i.stock_actual || 0) < (i.stock_minimo || 0))
+    const valorTotal = items.reduce((a, i) => a + (i.stock_actual || 0) * (i.precio_promedio || 0), 0)
+
+    const filtered = items.filter(i => {
+        const matchSearch = !search || [i.codigo, i.nombre, i.categoria, i.ubicacion].some(f => f?.toLowerCase().includes(search.toLowerCase()))
+        const matchLow = !filterLow || (i.stock_actual || 0) < (i.stock_minimo || 0)
         return matchSearch && matchLow
     })
 
@@ -59,15 +88,20 @@ export default function InventarioPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Inventario</p>
                     <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Inventario</h1>
                 </div>
-                <button className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
-                    <Plus className="h-4 w-4" />
-                    Nuevo artículo
-                </button>
+                <Sheet onOpenChange={(open) => !open && fetchInventory()}>
+                    <SheetTrigger asChild>
+                        <button className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
+                            <Plus className="h-4 w-4" />
+                            Nuevo artículo
+                        </button>
+                    </SheetTrigger>
+                    <InventoryItemForm onSuccess={() => fetchInventory()} />
+                </Sheet>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                 <Card><CardContent className="pt-4 pb-4 px-4">
-                    <div className="text-xl font-bold">{MOCK_INVENTORY.length}</div>
+                    <div className="text-xl font-bold">{items.length}</div>
                     <div className="text-xs text-muted-foreground mt-1">Artículos registrados</div>
                 </CardContent></Card>
                 <Card className={itemsLow.length > 0 ? "border-destructive/40" : ""}><CardContent className="pt-4 pb-4 px-4">
@@ -107,15 +141,19 @@ export default function InventarioPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {filtered.map(item => {
-                                const isLow = item.stock_actual < item.stock_minimo
+                            {loading ? (
+                                <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">Cargando inventario...</td></tr>
+                            ) : filtered.length === 0 ? (
+                                <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">No se encontraron artículos</td></tr>
+                            ) : filtered.map(item => {
+                                const isLow = (item.stock_actual || 0) < (item.stock_minimo || 0)
                                 return (
                                     <tr key={item.id} className={`hover:bg-muted/30 transition-colors ${isLow ? "bg-destructive/5" : ""}`}>
                                         <td className="px-5 py-3.5 font-mono text-xs font-medium">{item.codigo}</td>
                                         <td className="px-4 py-3.5 text-xs font-medium max-w-[220px]">{item.nombre}</td>
                                         <td className="px-4 py-3.5">
                                             <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${categoriaColor[item.categoria] ?? "bg-muted text-muted-foreground border-border"}`}>
-                                                {item.categoria.charAt(0) + item.categoria.slice(1).toLowerCase()}
+                                                {item.categoria?.charAt(0) + item.categoria?.slice(1).toLowerCase()}
                                             </span>
                                         </td>
                                         <td className={`px-4 py-3.5 text-sm font-bold tabular-nums ${isLow ? "text-destructive" : ""}`}>

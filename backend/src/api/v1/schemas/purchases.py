@@ -149,6 +149,17 @@ class PurchaseOrderCreate(PurchaseOrderBase):
     total: Decimal = Field(..., ge=0)
 
 
+class PurchaseOrderSimpleCreate(BaseModel):
+    """Direct creation of PO without requisition"""
+    numero_orden: str
+    proveedor_id: int
+    fecha_orden: date
+    fecha_entrega: Optional[date] = None
+    total: Decimal
+    items: int  # count
+    estatus: PurchaseOrderStatusEnum = PurchaseOrderStatusEnum.PENDIENTE
+
+
 class PurchaseOrderUpdate(BaseModel):
     fecha_entrega_esperada: Optional[date] = None
     fecha_entrega_real: Optional[date] = None

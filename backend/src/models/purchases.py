@@ -151,10 +151,10 @@ class PurchaseOrder(BaseModel, TimestampMixin):
     numero: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
     
     # Requisición de origen
-    requisition_id: Mapped[int] = mapped_column(
+    requisition_id: Mapped[Optional[int]] = mapped_column(
         Integer, 
         ForeignKey("requisitions.id"), 
-        nullable=False
+        nullable=True
     )
     requisition: Mapped["Requisition"] = relationship(
         "Requisition", 

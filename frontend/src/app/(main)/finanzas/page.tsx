@@ -1,8 +1,10 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { Plus, Search, AlertTriangle, Clock, TrendingDown } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { Sheet, SheetTrigger } from "@/components/ui/sheet"
+import { InvoiceForm } from "./invoice-form"
 
 type InvoiceStatus = "PENDIENTE" | "PARCIAL" | "PAGADA" | "VENCIDA" | "CANCELADA"
 type InvoiceType = "POR_COBRAR" | "POR_PAGAR"
@@ -51,12 +53,30 @@ export default function FinanzasPage() {
     const [tab, setTab] = useState<"POR_COBRAR" | "POR_PAGAR">("POR_COBRAR")
     const [search, setSearch] = useState("")
 
-    useEffect(() => {
+    const fetchInvoices = () => {
+        console.log("DEBUG: fetchInvoices starting for tab:", tab)
         fetch(`http://localhost:8001/api/v1/invoices?tipo=${tab}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }).then(r => r.json()).then(data => {
-            if (Array.isArray(data?.items)) setInvoices(data.items)
-        }).catch(() => { })
+        }).then(r => {
+            console.log("DEBUG: fetch response status:", r.status)
+            return r.json()
+        }).then(data => {
+            console.log("DEBUG: fetch data received:", data)
+            if (Array.isArray(data?.items) && data.items.length > 0) {
+                console.log("DEBUG: Setting real invoices, count:", data.items.length)
+                setInvoices(data.items)
+            } else {
+                console.log("DEBUG: No items or empty items, setting MOCK_INVOICES")
+                setInvoices(MOCK_INVOICES)
+            }
+        }).catch((err) => {
+            console.error("DEBUG: fetchInvoices error:", err)
+            setInvoices(MOCK_INVOICES)
+        })
+    }
+
+    useEffect(() => {
+        fetchInvoices()
     }, [tab])
 
     const displayed = invoices
@@ -80,10 +100,21 @@ export default function FinanzasPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Finanzas</p>
                     <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Facturas</h1>
                 </div>
-                <button className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
-                    <Plus className="h-4 w-4" />
-                    Nueva factura
-                </button>
+                <Sheet onOpenChange={(val: boolean) => {
+                    console.log("DEBUG: Sheet onOpenChange triggered, new value:", val);
+                    if (!val) fetchInvoices();
+                }}>
+                    <SheetTrigger asChild>
+                        <button
+                            onClick={() => console.log("DEBUG: Nueva factura button HTML onClick")}
+                            className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Nueva factura
+                        </button>
+                    </SheetTrigger>
+                    <InvoiceForm tipo={tab} onSuccess={() => { console.log("DEBUG: InvoiceForm onSuccess"); fetchInvoices(); }} />
+                </Sheet>
             </div>
 
             {/* Tab toggle */}

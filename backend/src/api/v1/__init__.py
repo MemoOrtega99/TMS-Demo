@@ -23,10 +23,10 @@ router.include_router(trips.router)
 router.include_router(invoices.router)
 
 # Purchases (Purchase Orders)
-router.include_router(purchases.router)
+router.include_router(purchases.router, prefix="/purchase-orders")
 
 # Inventory (Items, Movements)
-router.include_router(inventory.router)
+router.include_router(inventory.router, prefix="/inventory")
 
 # Notifications
 router.include_router(notifications.router)

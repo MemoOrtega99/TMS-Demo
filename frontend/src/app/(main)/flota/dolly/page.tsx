@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { Plus, Search, CheckCircle, Wrench, Link as LinkIcon, Truck } from "lucide-react"

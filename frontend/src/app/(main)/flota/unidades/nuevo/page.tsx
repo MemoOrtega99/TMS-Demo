@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Save } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useToast } from "@/components/ui/ToastContext"
 
 export default function NuevaUnidadPage() {
     const router = useRouter()
+    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [savedFields, setSavedFields] = useState<Set<string>>(new Set())
+    const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set())
 
     const [formData, setFormData] = useState({
         numero_economico: "",
@@ -24,7 +28,9 @@ export default function NuevaUnidadPage() {
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+        const { name } = e.target
+        setFormData(prev => ({ ...prev, [name]: e.target.value }))
+        setDirtyFields(prev => new Set(prev).add(name))
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -52,12 +58,26 @@ export default function NuevaUnidadPage() {
                 throw new Error(data.detail || "Error al registrar la unidad")
             }
 
-            router.push("/flota/unidades")
-            router.refresh()
+            toast.success("Unidad registrada correctamente")
+            setSavedFields(new Set(dirtyFields))
+            setDirtyFields(new Set())
+
+            setTimeout(() => {
+                setSavedFields(new Set())
+                router.push("/flota/unidades")
+                router.refresh()
+            }, 2000)
+
         } catch (err: any) {
             setError(err.message)
+            toast.error(err.message || "Error al registrar la unidad")
             setLoading(false)
         }
+    }
+
+    const getFieldClass = (name: string) => {
+        const base = "w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-300"
+        return `${base} ${savedFields.has(name) ? "field-saved" : ""}`
     }
 
     return (
@@ -90,7 +110,7 @@ export default function NuevaUnidadPage() {
                                     value={formData.numero_economico}
                                     onChange={handleChange}
                                     placeholder="Ej. ECO-001"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                                    className={`${getFieldClass("numero_economico")} font-mono`}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -99,7 +119,7 @@ export default function NuevaUnidadPage() {
                                     name="placas"
                                     value={formData.placas}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono uppercase"
+                                    className={`${getFieldClass("placas")} font-mono uppercase`}
                                 />
                             </div>
                         </div>
@@ -112,7 +132,7 @@ export default function NuevaUnidadPage() {
                                     value={formData.marca}
                                     onChange={handleChange}
                                     placeholder="Ej. Kenworth"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("marca")}
                                 />
                             </div>
                             <div className="space-y-2 flex-1">
@@ -122,7 +142,7 @@ export default function NuevaUnidadPage() {
                                     value={formData.modelo}
                                     onChange={handleChange}
                                     placeholder="Ej. T680"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("modelo")}
                                 />
                             </div>
                             <div className="space-y-2 w-full sm:w-32">
@@ -134,7 +154,7 @@ export default function NuevaUnidadPage() {
                                     onChange={handleChange}
                                     min="1980"
                                     max="2035"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("anio")}
                                 />
                             </div>
                         </div>
@@ -146,7 +166,7 @@ export default function NuevaUnidadPage() {
                                     name="numero_serie"
                                     value={formData.numero_serie}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono uppercase"
+                                    className={`${getFieldClass("numero_serie")} font-mono uppercase`}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -158,7 +178,7 @@ export default function NuevaUnidadPage() {
                                     onChange={handleChange}
                                     placeholder="0"
                                     step="0.1"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("capacidad_tanque")}
                                 />
                             </div>
                         </div>
@@ -170,7 +190,7 @@ export default function NuevaUnidadPage() {
                                     name="tipo_vehiculo"
                                     value={formData.tipo_vehiculo}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("tipo_vehiculo")}
                                 >
                                     <option value="TRACTO">Tractocamión</option>
                                     <option value="RABON">Rabón</option>
@@ -184,7 +204,7 @@ export default function NuevaUnidadPage() {
                                     name="estatus"
                                     value={formData.estatus}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("estatus")}
                                 >
                                     <option value="DISPONIBLE">Disponible</option>
                                     <option value="TALLER">En Taller</option>
@@ -212,3 +232,4 @@ export default function NuevaUnidadPage() {
         </div>
     )
 }
+

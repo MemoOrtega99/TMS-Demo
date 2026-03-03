@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Save } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useToast } from "@/components/ui/ToastContext"
 
 export default function NuevoViajePage() {
     const router = useRouter()
+    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [savedFields, setSavedFields] = useState<Set<string>>(new Set())
+    const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set())
 
     // We keep this simple for the demo. Normally we would fetch catalogs for these dropdowns.
     const [formData, setFormData] = useState({
@@ -22,7 +26,9 @@ export default function NuevoViajePage() {
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+        const { name } = e.target
+        setFormData(prev => ({ ...prev, [name]: e.target.value }))
+        setDirtyFields(prev => new Set(prev).add(name))
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,12 +55,26 @@ export default function NuevoViajePage() {
                 throw new Error(data.detail || "Error al crear el viaje")
             }
 
-            router.push("/operaciones/viajes")
-            router.refresh()
+            toast.success("Viaje creado correctamente")
+            setSavedFields(new Set(dirtyFields))
+            setDirtyFields(new Set())
+
+            setTimeout(() => {
+                setSavedFields(new Set())
+                router.push("/operaciones/viajes")
+                router.refresh()
+            }, 2000)
+
         } catch (err: any) {
             setError(err.message)
+            toast.error(err.message || "Error al crear el viaje")
             setLoading(false)
         }
+    }
+
+    const getFieldClass = (name: string) => {
+        const base = "w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-300"
+        return `${base} ${savedFields.has(name) ? "field-saved" : ""}`
     }
 
     return (
@@ -85,7 +105,7 @@ export default function NuevoViajePage() {
                                 name="numero_viaje"
                                 value={formData.numero_viaje}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                                className={`${getFieldClass("numero_viaje")} font-mono`}
                             />
                         </div>
 
@@ -97,7 +117,7 @@ export default function NuevoViajePage() {
                                     value={formData.origen}
                                     onChange={handleChange}
                                     placeholder="Ej. Monterrey, NL"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("origen")}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -107,7 +127,7 @@ export default function NuevoViajePage() {
                                     value={formData.destino}
                                     onChange={handleChange}
                                     placeholder="Ej. Laredo, TX"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("destino")}
                                 />
                             </div>
                         </div>
@@ -120,7 +140,7 @@ export default function NuevoViajePage() {
                                     name="fecha_programada"
                                     value={formData.fecha_programada}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("fecha_programada")}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -132,7 +152,7 @@ export default function NuevoViajePage() {
                                     onChange={handleChange}
                                     placeholder="0.00"
                                     step="0.01"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("tarifa_cliente")}
                                 />
                             </div>
                         </div>
@@ -143,7 +163,7 @@ export default function NuevoViajePage() {
                                 name="estatus"
                                 value={formData.estatus}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring capitalize"
+                                className={`${getFieldClass("estatus")} capitalize`}
                             >
                                 <option value="programado">Programado</option>
                                 <option value="asignado">Asignado</option>
@@ -169,3 +189,4 @@ export default function NuevoViajePage() {
         </div>
     )
 }
+

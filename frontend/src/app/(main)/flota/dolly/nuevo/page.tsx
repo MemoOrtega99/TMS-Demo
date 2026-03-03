@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Save } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useToast } from "@/components/ui/ToastContext"
 
 export default function NuevoDollyPage() {
     const router = useRouter()
+    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [savedFields, setSavedFields] = useState<Set<string>>(new Set())
+    const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set())
 
     const [formData, setFormData] = useState({
         numero_economico: "",
@@ -21,7 +25,9 @@ export default function NuevoDollyPage() {
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+        const { name } = e.target
+        setFormData(prev => ({ ...prev, [name]: e.target.value }))
+        setDirtyFields(prev => new Set(prev).add(name))
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -48,12 +54,26 @@ export default function NuevoDollyPage() {
                 throw new Error(data.detail || "Error al registrar el dolly")
             }
 
-            router.push("/flota/dolly")
-            router.refresh()
+            toast.success("Dolly registrado correctamente")
+            setSavedFields(new Set(dirtyFields))
+            setDirtyFields(new Set())
+
+            setTimeout(() => {
+                setSavedFields(new Set())
+                router.push("/flota/dolly")
+                router.refresh()
+            }, 2000)
+
         } catch (err: any) {
             setError(err.message)
+            toast.error(err.message || "Error al registrar el dolly")
             setLoading(false)
         }
+    }
+
+    const getFieldClass = (name: string) => {
+        const base = "w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-300"
+        return `${base} ${savedFields.has(name) ? "field-saved" : ""}`
     }
 
     return (
@@ -86,7 +106,7 @@ export default function NuevoDollyPage() {
                                     value={formData.numero_economico}
                                     onChange={handleChange}
                                     placeholder="Ej. DOL-001"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                                    className={`${getFieldClass("numero_economico")} font-mono`}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -95,7 +115,7 @@ export default function NuevoDollyPage() {
                                     name="placas"
                                     value={formData.placas}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono uppercase"
+                                    className={`${getFieldClass("placas")} font-mono uppercase`}
                                 />
                             </div>
                         </div>
@@ -108,7 +128,7 @@ export default function NuevoDollyPage() {
                                     value={formData.marca}
                                     onChange={handleChange}
                                     placeholder="Ej. MATRA"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("marca")}
                                 />
                             </div>
                             <div className="space-y-2 flex-1">
@@ -118,7 +138,7 @@ export default function NuevoDollyPage() {
                                     value={formData.modelo}
                                     onChange={handleChange}
                                     placeholder=""
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("modelo")}
                                 />
                             </div>
                             <div className="space-y-2 w-full sm:w-32">
@@ -130,7 +150,7 @@ export default function NuevoDollyPage() {
                                     onChange={handleChange}
                                     min="1980"
                                     max="2035"
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("anio")}
                                 />
                             </div>
                         </div>
@@ -142,7 +162,7 @@ export default function NuevoDollyPage() {
                                     name="estatus"
                                     value={formData.estatus}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className={getFieldClass("estatus")}
                                 >
                                     <option value="DISPONIBLE">Disponible</option>
                                     <option value="TALLER">En Taller</option>
@@ -170,3 +190,4 @@ export default function NuevoDollyPage() {
         </div>
     )
 }
+

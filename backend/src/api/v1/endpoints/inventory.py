@@ -19,7 +19,7 @@ from src.api.v1.schemas.pagination import PaginatedResponse
 
 router = APIRouter()
 
-@router.get("/items", response_model=PaginatedResponse[InventoryItemResponse], tags=["Inventario"])
+@router.get("/", response_model=PaginatedResponse[InventoryItemResponse], tags=["Inventario"])
 async def list_inventory_items(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
@@ -52,7 +52,7 @@ async def list_inventory_items(
         page_size=limit
     )
 
-@router.get("/items/{item_id}", response_model=InventoryItemWithMovementsResponse, tags=["Inventario"])
+@router.get("/{item_id}", response_model=InventoryItemWithMovementsResponse, tags=["Inventario"])
 async def get_inventory_item(item_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(
         select(InventoryItem)
@@ -62,4 +62,20 @@ async def get_inventory_item(item_id: int, db: AsyncSession = Depends(get_db), c
     item = result.scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=404, detail="Articulo no encontrado")
+    return item
+@router.post("/", response_model=InventoryItemResponse, tags=["Inventario"])
+async def create_inventory_item(
+    obj_in: InventoryItemCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Check if code already exists
+    result = await db.execute(select(InventoryItem).where(InventoryItem.codigo == obj_in.codigo))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="El código de artículo ya existe")
+
+    item = InventoryItem(**obj_in.dict())
+    db.add(item)
+    await db.commit()
+    await db.refresh(item)
     return item

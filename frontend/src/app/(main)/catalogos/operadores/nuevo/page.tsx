@@ -5,10 +5,15 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Save, User, Phone, Mail, CreditCard, Droplets, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { useToast } from "@/components/ui/ToastContext"
 
 export default function NuevoOperadorPage() {
     const router = useRouter()
+    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
+    const [savedFields, setSavedFields] = useState<Set<string>>(new Set())
+    const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set())
+
     const [formData, setFormData] = useState({
         nombre: "",
         apellido: "",
@@ -20,6 +25,10 @@ export default function NuevoOperadorPage() {
         tipo_sangre: "O+",
         estatus: "ACTIVO"
     })
+
+    const markDirty = (field: string) => {
+        setDirtyFields(prev => new Set(prev).add(field))
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -34,13 +43,27 @@ export default function NuevoOperadorPage() {
                 body: JSON.stringify(formData)
             })
             if (res.ok) {
-                router.push("/catalogos/operadores")
+                toast.success("Operador guardado correctamente")
+                setSavedFields(new Set(dirtyFields))
+                setDirtyFields(new Set())
+                setTimeout(() => {
+                    setSavedFields(new Set())
+                    router.push("/catalogos/operadores")
+                }, 2000)
+            } else {
+                toast.error("Error al guardar el operador")
             }
         } catch (err) {
             console.error(err)
+            toast.error("Error de conexión con el servidor")
         } finally {
             setLoading(false)
         }
+    }
+
+    const getFieldClass = (name: string) => {
+        const base = "w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-300"
+        return `${base} ${savedFields.has(name) ? "field-saved" : ""}`
     }
 
     return (
@@ -70,8 +93,11 @@ export default function NuevoOperadorPage() {
                                 required
                                 type="text"
                                 value={formData.nombre}
-                                onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                onChange={e => {
+                                    setFormData({ ...formData, nombre: e.target.value })
+                                    markDirty("nombre")
+                                }}
+                                className={getFieldClass("nombre")}
                                 placeholder="Ej. Juan Carlos"
                             />
                         </div>
@@ -81,8 +107,11 @@ export default function NuevoOperadorPage() {
                                 required
                                 type="text"
                                 value={formData.apellido}
-                                onChange={e => setFormData({ ...formData, apellido: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                onChange={e => {
+                                    setFormData({ ...formData, apellido: e.target.value })
+                                    markDirty("apellido")
+                                }}
+                                className={getFieldClass("apellido")}
                                 placeholder="Ej. Pérez Martínez"
                             />
                         </div>
@@ -94,8 +123,11 @@ export default function NuevoOperadorPage() {
                             <input
                                 type="text"
                                 value={formData.telefono}
-                                onChange={e => setFormData({ ...formData, telefono: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                onChange={e => {
+                                    setFormData({ ...formData, telefono: e.target.value })
+                                    markDirty("telefono")
+                                }}
+                                className={getFieldClass("telefono")}
                                 placeholder="81 1234 5678"
                             />
                         </div>
@@ -106,8 +138,11 @@ export default function NuevoOperadorPage() {
                             </label>
                             <select
                                 value={formData.tipo_sangre}
-                                onChange={e => setFormData({ ...formData, tipo_sangre: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                onChange={e => {
+                                    setFormData({ ...formData, tipo_sangre: e.target.value })
+                                    markDirty("tipo_sangre")
+                                }}
+                                className={getFieldClass("tipo_sangre")}
                             >
                                 {["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"].map(t => (
                                     <option key={t} value={t}>{t}</option>
@@ -131,8 +166,11 @@ export default function NuevoOperadorPage() {
                                 required
                                 type="text"
                                 value={formData.licencia_numero}
-                                onChange={e => setFormData({ ...formData, licencia_numero: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                                onChange={e => {
+                                    setFormData({ ...formData, licencia_numero: e.target.value })
+                                    markDirty("licencia_numero")
+                                }}
+                                className={`${getFieldClass("licencia_numero")} font-mono`}
                                 placeholder="ABCD123456"
                             />
                         </div>
@@ -140,8 +178,11 @@ export default function NuevoOperadorPage() {
                             <label className="text-xs font-medium text-muted-foreground">Tipo de Licencia</label>
                             <select
                                 value={formData.licencia_tipo}
-                                onChange={e => setFormData({ ...formData, licencia_tipo: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                onChange={e => {
+                                    setFormData({ ...formData, licencia_tipo: e.target.value })
+                                    markDirty("licencia_tipo")
+                                }}
+                                className={getFieldClass("licencia_tipo")}
                             >
                                 <option value="A">Tipo A (Federal)</option>
                                 <option value="B">Tipo B (Federal carga)</option>
@@ -158,8 +199,11 @@ export default function NuevoOperadorPage() {
                                 required
                                 type="date"
                                 value={formData.licencia_vigencia}
-                                onChange={e => setFormData({ ...formData, licencia_vigencia: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                onChange={e => {
+                                    setFormData({ ...formData, licencia_vigencia: e.target.value })
+                                    markDirty("licencia_vigencia")
+                                }}
+                                className={getFieldClass("licencia_vigencia")}
                             />
                         </div>
                         <div className="space-y-2">
@@ -169,8 +213,11 @@ export default function NuevoOperadorPage() {
                                 <input
                                     type="number"
                                     value={formData.salario_base}
-                                    onChange={e => setFormData({ ...formData, salario_base: parseFloat(e.target.value) || 0 })}
-                                    className="w-full pl-7 pr-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    onChange={e => {
+                                        setFormData({ ...formData, salario_base: parseFloat(e.target.value) || 0 })
+                                        markDirty("salario_base")
+                                    }}
+                                    className={`${getFieldClass("salario_base")} pl-7`}
                                     placeholder="0.00"
                                 />
                             </div>
@@ -195,3 +242,4 @@ export default function NuevoOperadorPage() {
         </div>
     )
 }
+
