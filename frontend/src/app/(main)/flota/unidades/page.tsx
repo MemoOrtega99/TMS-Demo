@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Truck, Plus, Search, Wrench, CheckCircle, AlertCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link"
 
 type VehicleStatus = "DISPONIBLE" | "EN_RUTA" | "TALLER" | "BAJA"
 
@@ -69,10 +70,10 @@ export default function UnidadesPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Flota</p>
                     <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Unidades</h1>
                 </div>
-                <button className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
+                <Link href="/flota/unidades/nuevo" className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors cursor-pointer">
                     <Plus className="h-4 w-4" />
                     Nueva unidad
-                </button>
+                </Link>
             </div>
 
             {/* Stats row */}

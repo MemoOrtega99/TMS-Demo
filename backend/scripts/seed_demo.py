@@ -211,7 +211,7 @@ async def seed_inventory(session):
         item = InventoryItem(
             codigo=codigo, nombre=nombre, categoria=categoria,
             stock_actual=stock, stock_minimo=minimo, unidad_medida=unidad,
-            precio_promedio=precio, ubicacion=ubicacion,
+            costo_promedio=precio, ubicacion=ubicacion,
         )
         session.add(item)
         added += 1
@@ -303,13 +303,14 @@ async def seed_invoices(session):
     added = 0
     for folio, tipo, cliente_id, total, pagado, vencimiento, concepto, estatus in invoices_data:
         exists = await session.scalar(
-            select(func.count(Invoice.id)).where(Invoice.folio == folio)
+            select(func.count(Invoice.id)).where(Invoice.numero_factura == folio)
         )
         if exists:
             continue
         invoice = Invoice(
-            folio=folio, tipo=tipo, cliente_id=cliente_id,
-            total=total, monto_pagado=pagado,
+            numero_factura=folio, tipo=tipo, cliente_id=cliente_id,
+            subtotal=total / 1.16, total=total, monto_pagado=pagado,
+            fecha_factura=vencimiento - timedelta(days=30) if vencimiento else date.today(),
             fecha_vencimiento=vencimiento, concepto=concepto,
             estatus=estatus,
         )

@@ -74,10 +74,10 @@ export default function ViajesPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Operaciones</p>
                     <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Viajes</h1>
                 </div>
-                <button className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
+                <Link href="/operaciones/viajes/nuevo" className="flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors cursor-pointer">
                     <Plus className="h-4 w-4" />
                     Nuevo viaje
-                </button>
+                </Link>
             </div>
 
             {/* Summary cards */}
@@ -141,9 +141,9 @@ export default function ViajesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {filtered.map(trip => (
-                                <tr key={trip.numero} className="hover:bg-muted/30 transition-colors group">
-                                    <td className="px-5 py-3.5 font-mono text-xs font-medium">{trip.numero}</td>
+                            {filtered.map((trip: any, i: number) => (
+                                <tr key={trip.numero || trip.numero_viaje || trip.id || i} className="hover:bg-muted/30 transition-colors group">
+                                    <td className="px-5 py-3.5 font-mono text-xs font-medium">{trip.numero || trip.numero_viaje}</td>
                                     <td className="px-4 py-3.5">
                                         <div className="flex items-center gap-1.5 text-xs">
                                             <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />

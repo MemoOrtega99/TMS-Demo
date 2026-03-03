@@ -26,6 +26,23 @@ const eficienciaBadge: Record<string, string> = {
 
 const NUM = (v: number) => new Intl.NumberFormat("es-MX").format(v)
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl ring-1 ring-black/5 min-w-[140px]">
+                <p className="text-xs font-bold text-slate-500 mb-1">{label}</p>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-slate-900" />
+                    <p className="text-sm font-bold text-slate-900">
+                        {payload[0].value} <span className="text-[10px] text-slate-400 font-normal">km/L</span>
+                    </p>
+                </div>
+            </div>
+        )
+    }
+    return null
+}
+
 export default function DieselRendimientosPage() {
     const promedio = (RENDIMIENTO_DATA.reduce((a, r) => a + r.rendimiento, 0) / RENDIMIENTO_DATA.length).toFixed(2)
     const mejor = RENDIMIENTO_DATA.reduce((a, r) => r.rendimiento > a.rendimiento ? r : a)
@@ -65,9 +82,8 @@ export default function DieselRendimientosPage() {
                             <XAxis dataKey="unidad" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                             <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} domain={[0, 3]} />
                             <Tooltip
-                                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
-                                labelStyle={{ color: "hsl(var(--foreground))", fontSize: 12 }}
-                                formatter={(value: number) => [`${value} km/L`, "Rendimiento"]}
+                                cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                                content={<CustomTooltip />}
                             />
                             <Bar dataKey="rendimiento" fill="hsl(var(--foreground))" radius={[4, 4, 0, 0]} maxBarSize={48} />
                         </BarChart>
